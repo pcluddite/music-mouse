@@ -17,7 +17,7 @@ namespace Musical_Mouse_Customizer
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            Application.Run(new MainForm());
         }
 
         public static string SaveTempFile(byte[] data, string name)
