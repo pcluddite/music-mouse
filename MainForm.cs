@@ -96,11 +96,10 @@ namespace Musical_Mouse_Customizer
 
                 string filePath = Path.GetTempFileName();
                 string tmpPath = Path.GetTempPath();
-                string musicFile = Path.GetFileName(args.MusicPath);
 
                 ScriptTemplate template = new ScriptTemplate()
                 {
-                    MusicPath = musicFile,
+                    MusicPath = args.MusicPath,
                     PresetVolume = args.PresetVolume,
                     PromptTimeout = args.PromptTimeout,
                     ResumePlay = args.ResumePlay,
@@ -121,11 +120,11 @@ namespace Musical_Mouse_Customizer
                     ret.Error = true;
                 }
                 File.Delete(filePath);
-                File.Delete(tmpPath + "audio.au3");
-                File.Delete(tmpPath + "vista_vol.dll");
-                File.Delete(tmpPath + "Aut2exe.exe");
-                File.Delete(tmpPath + "AutoItSC.bin");
-                File.Delete(tmpPath + "upx.exe");
+                File.Delete(Path.Combine(tmpPath, "audio.au3"));
+                File.Delete(Path.Combine(tmpPath, "vista_vol.dll"));
+                File.Delete(Path.Combine(tmpPath, "Aut2exe.exe"));
+                File.Delete(Path.Combine(tmpPath, "AutoItSC.bin"));
+                File.Delete(Path.Combine(tmpPath, "upx.exe"));
             }
             catch (Exception ex)
             {
@@ -154,7 +153,7 @@ namespace Musical_Mouse_Customizer
             lblVolume.Text = "Volume: " + trackBarVol.Value + "0%";
         }
 
-        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        private void checkBoxAutoUnmute_CheckedChanged(object sender, EventArgs e)
         {
             trackBarVol.Enabled = lblVolume.Enabled = !trackBarVol.Enabled;
         }

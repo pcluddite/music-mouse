@@ -285,7 +285,7 @@ namespace Musical_Mouse_Customizer
             this.checkBoxAutoUnmute.TabIndex = 15;
             this.checkBoxAutoUnmute.Text = "Automatically Unmute";
             this.checkBoxAutoUnmute.UseVisualStyleBackColor = true;
-            this.checkBoxAutoUnmute.CheckedChanged += new System.EventHandler(this.checkBox2_CheckedChanged);
+            this.checkBoxAutoUnmute.CheckedChanged += new System.EventHandler(this.checkBoxAutoUnmute_CheckedChanged);
             // 
             // lblVolume
             // 
