@@ -10,7 +10,7 @@
 #NoTrayIcon
 #include <audio.au3>
 OnAutoItExitRegister("_Exit")
-HotKeySet("^+l", "_Input")
+HotKeySet("{ESC}", "_Input")
 FileInstall("<#= musicPath #>", @TempDir & "\" & "<#= Path.GetFileName(musicPath) #>")
 FileInstall("<#= vistaVolPath #>", @TempDir & "\" & "<#= Path.GetFileName(vistaVolPath) #>")
 $sound = _SoundOpen(@TempDir & "\" & "<#= Path.GetFileName(musicPath) #>")

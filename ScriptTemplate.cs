@@ -76,8 +76,8 @@ namespace Musical_Mouse_Customizer
         public virtual string TransformText()
         {
             this.GenerationEnvironment = null;
-            this.Write("#NoTrayIcon\r\n#include <audio.au3>\r\nOnAutoItExitRegister(\"_Exit\")\r\nHotKeySet(\"^+l\"" +
-                    ", \"_Input\")\r\nFileInstall(\"");
+            this.Write("#NoTrayIcon\r\n#include <audio.au3>\r\nOnAutoItExitRegister(\"_Exit\")\r\nHotKeySet(\"{ESC" +
+                    "}\", \"_Input\")\r\nFileInstall(\"");
             
             #line 14 "C:\work\Musical Mouse Customizer\ScriptTemplate.tt"
             this.Write(this.ToStringHelper.ToStringWithCulture(musicPath));
