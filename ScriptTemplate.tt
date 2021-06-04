@@ -1,0 +1,82 @@
+﻿<#@ template language="C#" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.IO" #>
+<#@ parameter type="System.String" name="musicPath" #>
+<#@ parameter type="System.String" name="vistaVolPath" #>
+<#@ parameter type="System.Nullable<int>" name="presetVolume" #>
+<#@ parameter type="System.String" name="stopPassword" #>
+<#@ parameter type="System.Int32" name="promptTimeout" #>
+<#@ parameter type="System.Boolean" name="resumePlay" #>
+#NoTrayIcon
+#include <audio.au3>
+OnAutoItExitRegister("_Exit")
+HotKeySet("^+l", "_Input")
+FileInstall("<#= musicPath #>", @TempDir & "\" & "<#= Path.GetFileName(musicPath) #>")
+FileInstall("<#= vistaVolPath #>", @TempDir & "\" & "<#= Path.GetFileName(vistaVolPath) #>")
+$sound = _SoundOpen(@TempDir & "\" & "<#= Path.GetFileName(musicPath) #>")
+if @error then exit
+
+$XpOr2000 = StringInStr(@OSVersion, "XP") OR StringInStr(@OSVersion, "2000")
+if Not $XpOr2000 Then
+	PluginOpen(@TempDir & "\" & "<#= Path.GetFileName(vistaVolPath) #>")
+	if @error then exit
+EndIf
+While True
+	$pos = MouseGetPos()
+	Sleep(10)
+	$pos2 = MouseGetPos()
+	if $pos[0] & $pos[1] <> $pos2[0] & $pos2[1] then
+<#
+if (presetVolume != null) {
+#>
+		if Not $XpOr2000 Then
+			if _IsMute_Vista() Then _SetMute_Vista(False)
+			if _GetMasterVolumeScalar_Vista() < <#= presetVolume #> Then _SetMasterVolumeScalar_Vista(<#= presetVolume #>)
+		EndIf
+		
+<#
+}
+#>
+		_SoundPlay($sound)
+		
+		Do
+			$pos = MouseGetPos()
+			Sleep(100)
+			$pos2 = MouseGetPos()
+		Until $pos[0] = $pos2[0] And $pos2[1] = $pos[1]
+<# 
+if (resumePlay) { 
+#>
+		_SoundPause($sound)
+<#
+}
+else {
+#>
+		_SoundStop($sound)
+<#
+}
+#>
+	EndIf
+WEnd
+
+Func _Input()
+<#
+if (!string.IsNullOrEmpty(stopPassword)) { 
+#>
+	$text = InputBox("SecurityCheck", "Password", "", "", -1, -1, 0, 0, <#= promptTimeout #>)
+	if @error Then Return 0
+	if StringCompare($text, <#= stopPassword #>, 1) == 0 Then Exit
+<#
+}
+else {
+#>
+	Exit
+<#
+}
+#>
+EndFunc
+
+Func _Exit()
+	FileDelete(@TempDir & "\" & "<#= Path.GetFileName(musicPath) #>")
+	FileDelete(@TempDir & "\" & "<#= Path.GetFileName(vistaVolPath) #>")
+EndFunc

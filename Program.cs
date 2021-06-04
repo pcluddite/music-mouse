@@ -2,8 +2,7 @@
 // Copyright (c) 2012 Timothy Baxendale
 //
 using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.IO;
 using System.Windows.Forms;
 
 namespace Musical_Mouse_Customizer
@@ -19,6 +18,13 @@ namespace Musical_Mouse_Customizer
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new Form1());
+        }
+
+        public static string SaveTempFile(byte[] data, string name)
+        {
+            string tempFile = Path.Combine(Path.GetTempPath(), name);
+            File.WriteAllBytes(tempFile, data);
+            return tempFile;
         }
     }
 }

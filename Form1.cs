@@ -2,14 +2,10 @@
 // Copyright (c) 2012 Timothy Baxendale
 //
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+using System.Diagnostics;
 using System.IO;
+using System.Windows.Forms;
 
 namespace Musical_Mouse_Customizer
 {
@@ -46,89 +42,84 @@ namespace Musical_Mouse_Customizer
 
         private void button3_Click(object sender, EventArgs e)
         {
-            groupBox1.Enabled =
-            button3.Enabled = false;
-            backgroundWorker1.RunWorkerAsync();
+            int promptTimeout;
+            if (!int.TryParse(textBox5.Text, out promptTimeout))
+            {
+                ShowInputError(textBox5, "You must specify a numerical value for the timeout");
+            }
+            else if (string.IsNullOrEmpty(textBox1.Text))
+            {
+                ShowInputError(button1, "You must specify a music file to play");
+            }
+            else if (string.IsNullOrEmpty(textBox3.Text))
+            {
+                ShowInputError(button2, "You must specify where to save the executable");
+            }
+            else
+            {
+                groupBox1.Enabled = button3.Enabled = false;
+
+                CompileArguments args = new CompileArguments()
+                {
+                    MusicPath = textBox1.Text,
+                    PresetVolume = checkBox2.Checked ? trackBar1.Value : (int?)null,
+                    PromptTimeout = promptTimeout,
+                    StopPassword = textBox2.Text,
+                    ResumePlay = checkBox1.Checked,
+                    OutputPath = textBox3.Text,
+                    IconPath = textBox4.Text
+                };
+
+                backgroundWorker1.RunWorkerAsync(args);
+            }
         }
 
-        private void SaveTempFile(byte[] data, string file)
+        private void ShowInputError(Control control, string message)
         {
-            if (File.Exists(Path.GetTempPath() + "\\" + file)) { File.Delete(Path.GetTempPath() + "\\" + file); }
-            Stream stream = new MemoryStream(data);
-            FileStream fileStream = new FileStream(Path.GetTempPath() + "\\" + file, FileMode.CreateNew);
-            for (int i = 0; i < stream.Length; i++)
-                fileStream.WriteByte((byte)stream.ReadByte());
-            fileStream.Close();
+            control.Focus();
+            if (control is TextBox)
+                ((TextBox)control).SelectAll();
+            ShowError(message);
         }
 
         private void backgroundWorker1_DoWork(object sender, DoWorkEventArgs e)
         {
+            CompileReturn ret = new CompileReturn();
+            CompileArguments args = (CompileArguments)e.Argument;
+            ret.Message = "Finished!";
             try
             {
-                SaveTempFile(Properties.Resources.audio, "audio.au3");
-                SaveTempFile(Properties.Resources.vista_vol, "vista_vol.dll");
-                SaveTempFile(Properties.Resources.Aut2exe, "Aut2exe.exe");
-                SaveTempFile(Properties.Resources.AutoItSC, "AutoItSC.bin");
-                SaveTempFile(Properties.Resources.upx, "upx.exe");
+                Program.SaveTempFile(Properties.Resources.audio, "audio.au3");
+                Program.SaveTempFile(Properties.Resources.Aut2exe, "Aut2exe.exe");
+                Program.SaveTempFile(Properties.Resources.AutoItSC, "AutoItSC.bin");
+                Program.SaveTempFile(Properties.Resources.upx, "upx.exe");
+
                 string filePath = Path.GetTempFileName();
                 string tmpPath = Path.GetTempPath();
-                string musicFile = textBox1.Text.Split('\\')[textBox1.Text.Split('\\').GetUpperBound(0)];
+                string musicFile = Path.GetFileName(args.MusicPath);
 
-                string script =
-                    "#NoTrayIcon\r\n" +
-                    "#include <audio.au3>\r\n" +
-                    "OnAutoItExitRegister( \"_Exit\" )\r\n" +
-                    "HotKeySet(\"^+l\", \"_Input\")\r\n" +
-                    "FileInstall( \"" + textBox1.Text + "\", @Tempdir & \"\\" + musicFile + "\" )\r\n" +
-                    "FileInstall( \"vista_vol.dll\", @TempDir & \"\\vista_vol.dll\" )\r\n" +
-                    "$sound = _SoundOpen(@TempDir & \"\\" + musicFile + "\")\r\n" +
-                    "if @error then exit\r\n" +
-                    "if Not StringInStr(@OSVersion, \"XP\") AND Not StringInStr(@OSVersion, \"2000\") Then\r\n" +
-                    "   PluginOpen(@TempDir & \"\\vista_vol.dll\")\r\n" +
-                    "   if @error then exit\r\n" +
-                    "EndIf\r\n" +
-                    "While 1\r\n" +
-                    "   $pos = MouseGetPos()\r\n" +
-                    "   Sleep(10)\r\n" +
-                    "   $pos2 = MouseGetPos()\r\n" +
-                    "   if $pos[0] & $pos[1] <> $pos2[0] & $pos2[1] then\r\n";
-                if (checkBox2.Checked)
+                ScriptTemplate template = new ScriptTemplate()
                 {
-                    script +=
-                    "       if Not StringInStr(@OSVersion, \"XP\") AND Not StringInStr(@OSVersion, \"2000\") Then\r\n" +
-                    "           if _IsMute_Vista() Then _SetMute_Vista(False)\r\n" +
-                    "           if _GetMasterVolumeScalar_Vista() < " + vol + " Then _SetMasterVolumeScalar_Vista(" + vol + ")\r\n" +
-                    "       EndIf\r\n";
-                }
-                script +=
-                    "       _SoundPlay($sound)\r\n" +
-                    "       Do\r\n" +
-                    "           $pos = MouseGetPos()\r\n" +
-                    "           Sleep(100)\r\n" +
-                    "           $pos2 = MouseGetPos()\r\n" +
-                    "       Until $pos[0] = $pos2[0] And $pos2[1] = $pos[1]\r\n";
-          if (checkBox1.Checked) { 
-          script += "       _SoundPause($sound)\r\n"; } else{
-          script += "       _SoundStop($sound)\r\n"; }
-          script += "   EndIf\r\n" +
-                    "WEnd\r\n" +
-
-                    "Func _Input()\r\n" +
-                    "   $text = InputBox(\"SecurityCheck\", \"Password\", \"\", \"\", -1, -1, 0, 0, " + textBox5.Text + ")\r\n" +
-                    "   if @error Then Return 0\r\n" +
-                    "   if StringCompare($text, \"" + textBox2.Text + "\", 1) == 0 Then Exit\r\n" +
-                    "EndFunc\r\n" +
-
-                    "Func _Exit()\r\n" +
-                    "   FileDelete( @TempDir & \"\\" + musicFile + "\" )\r\n" +
-                    "   FileDelete( @TempDir & \"\\vista_vol.dll\" )\r\n" +
-                    "EndFunc";
-                File.WriteAllText(filePath, script);
-                System.Diagnostics.Process p = new System.Diagnostics.Process();
-                p.StartInfo.FileName = tmpPath + "aut2exe.exe";
-                p.StartInfo.Arguments = "/in \"" + filePath + "\" /out \"" + textBox3.Text + "\" /icon \"" + textBox4.Text + "\"";
+                    MusicPath = musicFile,
+                    PresetVolume = args.PresetVolume,
+                    PromptTimeout = args.PromptTimeout,
+                    ResumePlay = args.ResumePlay,
+                    StopPassword = args.StopPassword
+                };
+                File.WriteAllText(filePath, template.TransformText());
+                Process p = new Process();
+                p.StartInfo = new ProcessStartInfo()
+                {
+                    FileName = tmpPath + "aut2exe.exe",
+                    Arguments = "/in \"" + filePath + "\" /out \"" + args.OutputPath + "\" /icon \"" + args.IconPath + "\""
+                };
                 p.Start();
                 p.WaitForExit();
+                if (p.ExitCode != 0)
+                {
+                    ret.Message = "Compilation finished with errors";
+                    ret.Error = true;
+                }
                 File.Delete(filePath);
                 File.Delete(tmpPath + "audio.au3");
                 File.Delete(tmpPath + "vista_vol.dll");
@@ -138,8 +129,10 @@ namespace Musical_Mouse_Customizer
             }
             catch (Exception ex)
             {
-                MessageBox.Show(ex.Message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+                ret.Error = true;
+                ret.Message = ex.Message;
             }
+            e.Result = ret;
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -149,9 +142,16 @@ namespace Musical_Mouse_Customizer
 
         private void backgroundWorker1_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            groupBox1.Enabled =
-                button3.Enabled = true;
-            MessageBox.Show(this, "Finished!", Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+            groupBox1.Enabled = button3.Enabled = true;
+            CompileReturn ret = (CompileReturn)e.Result;
+            if (ret.Error)
+            {
+                ShowError(ret.Message);
+            }
+            else
+            {
+                ShowInfo(ret.Message);
+            }
         }
 
         int vol = 50;
@@ -163,8 +163,34 @@ namespace Musical_Mouse_Customizer
 
         private void checkBox2_CheckedChanged(object sender, EventArgs e)
         {
-            trackBar1.Enabled =
-                label7.Enabled = !trackBar1.Enabled;
+            trackBar1.Enabled = label7.Enabled = !trackBar1.Enabled;
+        }
+
+        private void ShowError(string message)
+        {
+            MessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+
+        private void ShowInfo(string message)
+        {
+            MessageBox.Show(this, message, Text, MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
+
+        private class CompileArguments
+        {
+            public string MusicPath { get; set; }
+            public int? PresetVolume { get; set; }
+            public string StopPassword { get; set; }
+            public int PromptTimeout { get; set; }
+            public bool ResumePlay { get; set; }
+            public string IconPath { get; set; }
+            public string OutputPath { get; set; } 
+        }
+
+        private class CompileReturn
+        {
+            public bool Error { get; set; }
+            public string Message { get; set; }
         }
     }
 }
