@@ -1,4 +1,7 @@
-﻿namespace Musical_Mouse_Customizer
+﻿//
+// Copyright (c) 2012 Timothy Baxendale
+//
+namespace Musical_Mouse_Customizer
 {
     partial class Form1
     {
